@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <fstream>
 
-char parse_delimiter(const char* optarg) {
+char ParseDelimiter(const char* optarg) {
     //ВЫЧИСЛЯЕМ ДЛИНУ СТРОКИ АРГУМЕНТА delimeter
     int len_optarg = (int) strlen(optarg);
     
@@ -39,65 +39,63 @@ char parse_delimiter(const char* optarg) {
 
 
 //ПЕЧАТАЕТ НУЖНОЕ (ИЛИ ДОСТУПНОЕ) КОЛИЧЕСТВО СТРОК С КОНЦА
-void getLinesTail(char* filename, int number_lines, char delimiter) {
-    
+void PrintFromEnd(char* filename, int number_lines, char delimiter) {
+    char ch;
     //ОТКРЫВАЮ ФАЙЛ, УКАЗАТЕЛЬ НА КОНЕЦ ФАЙЛА
     std::ifstream myfile(filename, std::ios_base::ate);
-    char ch;
     
-    if (myfile.is_open()) {
-        //ОПРЕДЕЛЯЮ КОЛИЧЕСТВО БАЙТ В ФАЙЛЕ
-        std::streamoff size = myfile.tellg();
-        long tmp = size;
+    if (!myfile.is_open()) {
+        std::cerr << EXIT_FAILURE;
+        return;
+    }
+    //ОПРЕДЕЛЯЮ КОЛИЧЕСТВО БАЙТ В ФАЙЛЕ
+    std::streamoff size = myfile.tellg();
+    long tmp = size;
         
-        if (number_lines == -1) {
-            myfile.seekg(1);
-        }
-        else {
-            while (number_lines != 0 && size != 0) {
-                myfile.seekg(size - 1);
-                myfile.get(ch);
-                if (ch == delimiter && size != tmp - 1) {
-                    number_lines--;
-                }
-                size--;
-            }
-        }
-        
-        //ВЫВОЖУ СТРОКИ
-        while (!myfile.eof()) {
-            myfile.get(ch);
-            std::cout << ch;
-        }
+    if (number_lines == -1) {
+        myfile.seekg(1);
     }
     else {
-        std::cout << "Ошибка открытия файла";
+        while (number_lines != 0 && size != 0) {
+            myfile.seekg(size - 1);
+            if (myfile.get() == delimiter && size != tmp - 1) {
+                --number_lines;
+            }
+            --size;
+        }
+    }
+        
+    //ВЫВОЖУ СТРОКИ
+    while (!myfile.eof()) {
+        myfile.get(ch);
+        std::cout << ch;
     }
 }
 
 
-void getLinesStart(char* filename, int number_lines, char delimiter) {
-    std::ifstream myfile(filename);
+void PrintFromBeginning(char* filename, int number_lines, char delimiter) {
     char ch;
+    std::ifstream myfile(filename);
     
-    if (myfile.is_open()) {
-        while (number_lines != 0 && !myfile.eof()) {
-            myfile.get(ch);
-            std::cout << ch;
-            if (ch == delimiter) {
-                number_lines--;
-            }
-        }
+    if (!myfile.is_open()) {
+        std::cerr << EXIT_FAILURE;
+        return;
     }
-    else {
-        std::cout << "Ошибка открытия файла";
+    while (number_lines != 0 && !myfile.eof()) {
+        myfile.get(ch);
+        std::cout << ch;
+        if (ch == delimiter) {
+            --number_lines;
+        }
     }
 }
 
 
 int main(int argc, char* argv[]) {
-    //ВВОЖУ ПЕРЕМЕННЫЕ
-    int number_lines = -1, tail_output = 0, rez, option_index = -1;
+    int number_lines = -1;
+    bool if_from_end = false;
+    int rez;
+    int option_index = -1;
     char delimiter = '\n';
     char* filename;
     
@@ -116,7 +114,7 @@ int main(int argc, char* argv[]) {
 
         switch(rez) {
             case 't': {
-                tail_output = 1;
+                if_from_end = true;
                 break;
             }
             case 'l': {
@@ -128,7 +126,7 @@ int main(int argc, char* argv[]) {
             }
             case 'd': {
                 if (optarg != NULL) {
-                    delimiter = parse_delimiter(optarg);
+                    delimiter = ParseDelimiter(optarg);
                 }
                 break;
             }
@@ -140,12 +138,13 @@ int main(int argc, char* argv[]) {
     }
     filename = argv[optind];
     
-    if (tail_output == 1) {
-        getLinesTail(filename, number_lines, delimiter);
+    if (if_from_end) {
+        PrintFromEnd(filename, number_lines, delimiter);
     }
     else {
-        getLinesStart(filename, number_lines, delimiter);
+        PrintFromBeginning(filename, number_lines, delimiter);
     }
     
-    return 0;
+    return EXIT_SUCCESS;
 }
+
